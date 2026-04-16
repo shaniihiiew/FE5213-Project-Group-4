@@ -17,7 +17,9 @@ target_L  = 1.0 / 3.0
 T         = 40
 
 SHOCK_SIZES    = [0.01, 0.05, 0.10]   # 1%, 5%, 10% of G_ss
-FORESEEN_DATES = [1, 4, 8]            # announcement leads 
+FORESEEN_DATES = [1, 5, 9]            # announcement leads (quarters)
+BENCHMARK_LEAD = 5                     # benchmark foreseen lead
+BENCHMARK_SIZE = 0.10                  # benchmark shock size
 
 # =============================================================================
 # 2. CORE MODEL EQUATIONS
@@ -142,19 +144,16 @@ def solve_transition(K0, z, chi, G_path, initial_ss, terminal_ss):
 # =============================================================================
 
 def make_foreseen_path(G_ss, shock_size, T_sim, lead):
-    """Announced at t=0, hits once at t=lead."""
     path = np.full(T_sim+1, G_ss)
     path[lead] = G_ss * (1.0 + shock_size)
     return path
 
 def make_unforeseen_onetime_path(G_ss, shock_size, T_sim):
-    """No advance notice, hits once at t=0."""
     path = np.full(T_sim+1, G_ss)
     path[0] = G_ss * (1.0 + shock_size)
     return path
 
 def make_permanent_path(G_ss, shock_size, T_sim):
-    """No advance notice, permanent increase from t=0."""
     return np.full(T_sim+1, G_ss * (1.0 + shock_size))
 
 # =============================================================================
@@ -169,7 +168,7 @@ def plot_figure(foreseen_by_lead, res_unforeseen, res_permanent,
                 ss, shock_size_pct, save_path=None):
     """
     One figure per shock size. 3 rows x 4 cols.
-      Row 1: foreseen — 3 coloured lines (lead 1Q, 4Q, 8Q overlaid)
+      Row 1: foreseen — 3 lines (t=1, 5, 9) overlaid; t=5 is benchmark
       Row 2: unforeseen one-time — single line
       Row 3: unforeseen permanent — single line
     """
@@ -182,25 +181,35 @@ def plot_figure(foreseen_by_lead, res_unforeseen, res_permanent,
     ]
     colors     = ["#1f77b4", "#ff7f0e", "#2ca02c"]
     linestyles = ["-", "--", ":"]
+    linewidths = [1.6, 1.6, 1.6]
     tgrid      = np.arange(T + 1)
 
     fig, axes = plt.subplots(
         3, 4, figsize=(15, 9),
-        gridspec_kw={"hspace": 0.55, "wspace": 0.35}
+        gridspec_kw={"hspace": 0.65, "wspace": 0.38}
     )
+
+    is_benchmark = (shock_size_pct == int(BENCHMARK_SIZE * 100))
 
     for col, (var, var_label) in enumerate(vars_plot):
 
         # Row 0: foreseen, 3 leads overlaid
         ax = axes[0, col]
-        for (lead, color, ls) in zip(FORESEEN_DATES, colors, linestyles):
+        for (lead, color, ls, lw) in zip(
+                FORESEEN_DATES, colors, linestyles, linewidths):
+            # thicker line for benchmark lead
+            lw_use = 2.4 if (lead == BENCHMARK_LEAD and is_benchmark) else lw
+            label  = f"t={lead} (benchmark)" if (
+                lead == BENCHMARK_LEAD and is_benchmark) else f"t={lead}"
             ax.plot(tgrid, pct_dev(foreseen_by_lead[lead][var], ss[var]),
-                    label=f"t={lead}", color=color,
-                    linewidth=1.6, linestyle=ls)
+                    label=label, color=color,
+                    linewidth=lw_use, linestyle=ls)
         ax.axhline(0, color="black", linewidth=0.5, linestyle="--")
         ax.set_title(var_label, fontsize=10, fontweight="bold", pad=6)
         if col == 0:
             ax.set_ylabel(row_labels[0] + "\n% dev. from SS", fontsize=7.5)
+        else:
+            ax.set_ylabel("% dev. from SS", fontsize=7)
         ax.set_xlabel("t", fontsize=9)
         ax.tick_params(labelsize=7)
         ax.spines["top"].set_visible(False)
@@ -215,6 +224,8 @@ def plot_figure(foreseen_by_lead, res_unforeseen, res_permanent,
         ax.axhline(0, color="black", linewidth=0.5, linestyle="--")
         if col == 0:
             ax.set_ylabel(row_labels[1] + "\n% dev. from SS", fontsize=7.5)
+        else:
+            ax.set_ylabel("% dev. from SS", fontsize=7)
         ax.set_xlabel("t", fontsize=9)
         ax.tick_params(labelsize=7)
         ax.spines["top"].set_visible(False)
@@ -227,14 +238,18 @@ def plot_figure(foreseen_by_lead, res_unforeseen, res_permanent,
         ax.axhline(0, color="black", linewidth=0.5, linestyle="--")
         if col == 0:
             ax.set_ylabel(row_labels[2] + "\n% dev. from SS", fontsize=7.5)
+        else:
+            ax.set_ylabel("% dev. from SS", fontsize=7)
         ax.set_xlabel("t", fontsize=9)
         ax.tick_params(labelsize=7)
         ax.spines["top"].set_visible(False)
         ax.spines["right"].set_visible(False)
 
+    benchmark_note = "  [Benchmark: 10% shock, t=5 lead]" if is_benchmark else ""
     fig.suptitle(
-        f"Section 3.2: Government Spending Shock IRFs  —  Shock size = {shock_size_pct}% of G_ss",
-        fontsize=12, fontweight="bold", y=1.01
+        f"Section 3.2: Government Spending Shock IRFs  —  "
+        f"Shock size = {shock_size_pct}% of G_ss{benchmark_note}",
+        fontsize=11, fontweight="bold", y=1.01
     )
 
     if save_path:
@@ -258,7 +273,9 @@ if __name__ == "__main__":
     print("=" * 50)
     for k, v in ss_ref.items():
         print(f"  {k:<6}: {v:.4f}")
-    print(f"  {'chi':<6}: {chi:.4f}\n")
+    print(f"  {'chi':<6}: {chi:.4f}")
+    print(f"\nBenchmark: shock size = {int(BENCHMARK_SIZE*100)}%, "
+          f"foreseen lead = t={BENCHMARK_LEAD}\n")
 
     G_ss = ss_ref["G"]
 
@@ -266,21 +283,21 @@ if __name__ == "__main__":
         size_pct = int(shock_size * 100)
         print(f"\n--- Shock size = {size_pct}% ---")
 
-        # Foreseen: 3 leads (timing is meaningful here)
+        # Foreseen: 3 leads
         foreseen_by_lead = {}
         for lead in FORESEEN_DATES:
             G_path = make_foreseen_path(G_ss, shock_size, T, lead)
             foreseen_by_lead[lead] = solve_transition(
                 ss_ref["K"], z_sim, chi, G_path, ss_ref, ss_ref)
-            print(f"  Foreseen lead={lead}Q done.")
+            print(f"  Foreseen lead=t{lead} done.")
 
-        # Unforeseen one-time: solved once at t=0
+        # Unforeseen one-time at t=0
         G_unf = make_unforeseen_onetime_path(G_ss, shock_size, T)
         res_unforeseen = solve_transition(
             ss_ref["K"], z_sim, chi, G_unf, ss_ref, ss_ref)
         print(f"  Unforeseen one-time done.")
 
-        # Unforeseen permanent: solved once at t=0
+        # Unforeseen permanent at t=0
         terminal_perm = solve_steady_state(
             z_sim, chi, G_ss * (1.0 + shock_size),
             guess=(ss_ref["K"], ss_ref["L"], ss_ref["C"])
