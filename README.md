@@ -81,11 +81,4 @@ For full reproduction of the written project:
 - The Ricardian Equivalence notebook uses `z = 1.01`.
 - In the fiscal notebook, the current Section 3.2 conditional run uses `z_sim = zH = 1.01`.
 - For the Section 3.3 state-dependent analysis, the productivity transition matrix is
-
-  \[
-  P_z =
-  \begin{bmatrix}
-  0.875 & 0.125 \\
-  0.125 & 0.875
-  \end{bmatrix}
-  \]
+  `P_z = [[0.875, 0.125], [0.125, 0.875]]`
