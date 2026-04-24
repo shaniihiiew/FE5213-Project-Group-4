@@ -29,6 +29,8 @@ Saved figures are in `plots/`:
 - `fig_01pct.png`
 - `fig_05pct.png`
 - `fig_10pct.png`
+- `fig_01pct_t120.png` (long-horizon check)
+- `fig_05pct_t120.png` (long-horizon check)
 - `fig_10pct_t120.png` (long-horizon check)
 - `sec33_plot1.png`
 - `sec33_plot2.png`
@@ -52,7 +54,8 @@ Optional:
 1. Open `fiscal_policy_experiments_3.2_3.3.ipynb`.
 2. Run cells top-to-bottom.
 3. For Section 3.2 baseline figures, use the default horizon (`t=40` setup in the timing cell).
-4. Run the long-horizon validation cell to generate the `t=120` convergence plot (`fig_10pct_t120.png`).
+4. Run the long-horizon validation cell to generate `t=120` Section 3.2 figures:
+   `fig_01pct_t120.png`, `fig_05pct_t120.png`, and `fig_10pct_t120.png`.
 5. Confirm updated figures are saved in `plots/`.
 
 ## Notes
